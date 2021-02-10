@@ -22,18 +22,6 @@ public class InteractionController : MonoBehaviour
 
     private void OnExamine()
     {
-        /*RaycastHit hitPoint;
-        if (Physics.Raycast(transform.position, transform.forward, out hitPoint, MaxInteractionDistance))
-        {
-            if (hitPoint.collider.GetComponent<Examinable>() != null)
-            {
-                Examinable examinable = hitPoint.collider.GetComponent<Examinable>();
-                DisplayText.text = examinable.textOnExamination;
-                timer = 0;
-                isShowing = true;
-            }
-        }*/
-
         int mask = LayerMask.GetMask("Interactable");
         if (Physics.Raycast(
             transform.position,
