@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using System.Collections;
 
 public class InteractionController : MonoBehaviour
 {
@@ -7,17 +8,12 @@ public class InteractionController : MonoBehaviour
     public float MaxInteractionDistance = 2f;
     public float DisplayTextTime = 2f;
 
-    private float _timer;
-    private bool _isShowing;
-
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.Mouse0))
         {
             OnExamine();
         }
-
-        TimerManagement();
     }
 
     private void OnExamine()
@@ -31,30 +27,16 @@ public class InteractionController : MonoBehaviour
             mask
         ))
         {
-            HandleInteraction(hit);
+            StartCoroutine(HandleInteraction(hit));
         }
     }
 
-    private void HandleInteraction(RaycastHit hit)
+    IEnumerator HandleInteraction(RaycastHit hit)
     {
         DisplayText.text = hit.transform.gameObject.name;
-        _timer = 0;
-        _isShowing = true;
-    }
 
-    private void TimerManagement()
-    {
-        if (_isShowing)
-        {
-            _timer += Time.deltaTime;
-            if (_timer >= DisplayTextTime)
-            {
-                _isShowing = false;
-            }
-        }
-        else
-        {
-            DisplayText.text = "";
-        }
+        yield return new WaitForSeconds(DisplayTextTime);
+
+        DisplayText.text = "";
     }
 }
