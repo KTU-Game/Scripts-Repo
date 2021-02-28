@@ -4,9 +4,9 @@ using System.Collections;
 
 public class InteractionController : MonoBehaviour
 {
-    public TMP_Text DisplayText;
     public float MaxInteractionDistance = 2f;
     public float DisplayTextTime = 2f;
+    public Inventory inventory;
 
     private void Update()
     {
@@ -18,25 +18,32 @@ public class InteractionController : MonoBehaviour
 
     private void OnExamine()
     {
-        int mask = LayerMask.GetMask("Interactable");
         if (Physics.Raycast(
             transform.position,
             transform.forward,
             out var hit,
-            MaxInteractionDistance,
-            mask
+            MaxInteractionDistance
         ))
         {
-            StartCoroutine(HandleInteraction(hit));
+            var _examinable = hit.collider.GetComponentInParent<ItemController>();
+            if (_examinable != null)
+            {
+                if (_examinable.item.pickable)
+                {
+                    inventory.AddItem(_examinable.item);
+                    Destroy(_examinable.gameObject);
+                }
+                else if (_examinable.item.examinable)
+                    StartCoroutine(HandleExamination(_examinable));
+            }
+                
         }
     }
 
-    IEnumerator HandleInteraction(RaycastHit hit)
+    IEnumerator HandleExamination(ItemController _examinable)
     {
-        DisplayText.text = hit.transform.gameObject.name;
-
+        _examinable.Activate(true);
         yield return new WaitForSeconds(DisplayTextTime);
-
-        DisplayText.text = "";
+        _examinable.Activate(false);
     }
 }
