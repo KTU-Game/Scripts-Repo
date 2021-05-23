@@ -2,6 +2,9 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    [SerializeField]
+    private GameManager GameManager;
+
     [SerializeField, Range(0f, 100f)]
     private float MaxSpeed = 10f;
 
@@ -25,6 +28,9 @@ public class PlayerController : MonoBehaviour
     private bool _onGround;
     private int _jumpPhase;
 
+    [SerializeField]
+    private Animator _animator;
+
     private void Awake()
     {
         _rigidbody = GetComponent<Rigidbody>();
@@ -33,13 +39,19 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        Vector2 playerInput;
-        playerInput.x = Input.GetAxis("Horizontal");
-        playerInput.y = Input.GetAxis("Vertical");
-        playerInput = Vector2.ClampMagnitude(playerInput, 1f);
+        var playerInput = Vector2.zero;
+        if (!StateManager.IsLocked)
+        {
+            playerInput.x = Input.GetAxis("Horizontal");
+            playerInput.y = Input.GetAxis("Vertical");
+            playerInput = Vector2.ClampMagnitude(playerInput, 1f);
+        }
+
         _desiredVelocity = _playerTransform.right * playerInput.x + _playerTransform.forward * playerInput.y;
         _desiredVelocity *= MaxSpeed;
         _desiredJump |= Input.GetButtonDown("Jump");
+
+        _animator.SetBool("Walking", _desiredVelocity.sqrMagnitude > 0);
     }
 
     private void FixedUpdate()
@@ -58,6 +70,14 @@ public class PlayerController : MonoBehaviour
 
         _rigidbody.velocity = _velocity;
         _onGround = false;
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("GameOverTrigger"))
+        {
+            GameManager.GameOver();
+        }
     }
 
     private void OnCollisionEnter(Collision collision)

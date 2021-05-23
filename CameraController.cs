@@ -10,6 +10,8 @@ public class CameraController : MonoBehaviour
 
     private float _xRotation;
 
+    private float _verticalClamp = 85f;
+
     private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
@@ -17,14 +19,26 @@ public class CameraController : MonoBehaviour
 
     private void Update()
     {
+        if (StateManager.IsLocked)
+        {
+            Cursor.lockState = CursorLockMode.Confined;
+            return;
+        }
+
         float delta = Sensitivity * Time.deltaTime * 100f;
         float mouseX = Input.GetAxis("Mouse X") * delta;
         float mouseY = Input.GetAxis("Mouse Y") * delta;
 
-        _xRotation -= mouseY;
-        _xRotation = Mathf.Clamp(_xRotation, -90f, 90f);
+        var direction = new Vector2(mouseX, mouseY);
+        UpdateLookRotation(direction);
+    }
+
+    private void UpdateLookRotation(Vector2 direction)
+    {
+        _xRotation -= direction.y;
+        _xRotation = Mathf.Clamp(_xRotation, -_verticalClamp, _verticalClamp);
 
         transform.localRotation = Quaternion.Euler(_xRotation, 0f, 0f);
-        PlayerBody.Rotate(Vector3.up * mouseX);
+        PlayerBody.Rotate(Vector3.up * direction.x);
     }
 }

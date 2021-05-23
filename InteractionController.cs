@@ -1,12 +1,16 @@
 using UnityEngine;
-using TMPro;
 using System.Collections;
 
 public class InteractionController : MonoBehaviour
 {
-    public TMP_Text DisplayText;
     public float MaxInteractionDistance = 2f;
-    public float DisplayTextTime = 2f;
+
+    [SerializeField]
+    private float DisplayTextDuration = 2f;
+
+    public Inventory Inventory;
+    public MinigameManager MinigameManager;
+
 
     private void Update()
     {
@@ -18,25 +22,103 @@ public class InteractionController : MonoBehaviour
 
     private void OnExamine()
     {
-        int mask = LayerMask.GetMask("Interactable");
         if (Physics.Raycast(
             transform.position,
             transform.forward,
             out var hit,
-            MaxInteractionDistance,
-            mask
+            MaxInteractionDistance
         ))
         {
-            StartCoroutine(HandleInteraction(hit));
+            CheckFootballDeploy();
+            CheckItemController(hit);
+            CheckOpenable(hit);
+            CheckKnob(hit);
+            CheckBulbInput(hit);
+            CheckSafe(hit);
         }
     }
 
-    IEnumerator HandleInteraction(RaycastHit hit)
+    private void CheckItemController(RaycastHit hit)
     {
-        DisplayText.text = hit.transform.gameObject.name;
+        var examinable = hit.collider.GetComponentInParent<ItemController>();
+        if (examinable != null)
+        {
+            if (examinable.InteractableItem.Pickable)
+            {
+                if (Inventory.AddItem(examinable.InteractableItem))
+                    Destroy(examinable.gameObject);
+            }
+            else if (examinable.InteractableItem.Examinable)
+                StartCoroutine(HandleExamination(examinable));
+        }
+    }
 
-        yield return new WaitForSeconds(DisplayTextTime);
+    private void CheckOpenable(RaycastHit hit)
+    {
+        var door = hit.collider.GetComponent<Openable>();
+        if (door != null)
+        {
+            if (door.IsLocked)
+            {
+                if (door.CheckKey(Inventory.GetEquippedItem()))
+                    Inventory.RemoveItem(Inventory.GetSelectedIndex());
+            }
 
-        DisplayText.text = "";
+            door.Trigger();
+        }
+    }
+
+    private void CheckKnob(RaycastHit hit)
+    {
+        var knob = hit.collider.GetComponent<Knob>();
+        if (knob != null)
+        {
+            var stoveMinigame = MinigameManager.StoveMinigame;
+            knob.Trigger();
+            if (!stoveMinigame.IsFinished)
+            {
+                stoveMinigame.Check();
+            }
+        }
+    }
+
+    private void CheckBulbInput(RaycastHit hit)
+    {
+        var bulbInput = hit.collider.GetComponent<BulbInput>();
+        if (bulbInput != null)
+        {
+            if (!bulbInput.IsFixed)
+            {
+                if (bulbInput.Trigger(Inventory.GetEquippedItem()))
+                {
+                    Inventory.RemoveItem(Inventory.GetSelectedIndex());
+                    MinigameManager.BulbMinigame.AddBulb();
+                }
+            }
+        }
+    }
+
+    private void CheckFootballDeploy()
+    {
+        if (MinigameManager.FootballMinigame.Respawn(Inventory.GetEquippedItem()))
+        {
+            Inventory.RemoveItem(Inventory.GetSelectedIndex());
+        }
+    }
+
+    private void CheckSafe(RaycastHit hit)
+    {
+        var safeKey = hit.collider.GetComponent<SafeKey>();
+        if (safeKey != null)
+        {
+            safeKey.Trigger();
+        }
+    }
+
+    private IEnumerator HandleExamination(ItemController examinable)
+    {
+        examinable.Activate(true);
+        yield return new WaitForSeconds(DisplayTextDuration);
+        examinable.Activate(false);
     }
 }
